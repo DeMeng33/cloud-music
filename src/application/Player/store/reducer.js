@@ -11,7 +11,8 @@ const defaultState = fromJS({
   mode: playMode.sequence,
   currentIndex: -1,
   showPlayList: false,
-  currentSong: {}
+  currentSong: {},
+  speed: 1
 });
 
 const handleInsertSong = (state, song) => {
@@ -21,7 +22,7 @@ const handleInsertSong = (state, song) => {
   //看看有没有同款
   let fpIndex = findIndex(song, playList);
   // 如果是当前歌曲直接不处理
-  if(fpIndex === currentIndex && currentIndex !== -1) return;
+  if(fpIndex === currentIndex && currentIndex !== -1) return state;
   currentIndex++;
   // 把歌放进去,放到当前播放曲目的下一个位置
   playList.splice(currentIndex, 0, song);
@@ -95,6 +96,8 @@ export default (state = defaultState, action) => {
       return handleInsertSong(state, action.data);
     case actionTypes.DELETE_SONG:
       return handleDeleteSong(state, action.data);
+    case actionTypes.CHANGE_SPEED:
+      return state.set('speed', action.data);
     default:
       return state;
   }

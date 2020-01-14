@@ -10,12 +10,11 @@ import {
 } from './style';
 import Scroll from '../../baseUI/scroll/index';
 import { EnterLoading } from './../Singers/style';
-import { filterIndex, filterIdx } from '../../api/utils';
+import { filterIndex } from '../../api/utils';
 import { renderRoutes } from 'react-router-config';
 
 function Rank(props) {
   const { rankList:list, loading, songsCount } = props;
-
   const { getRankListDataDispatch } = props;
 
   let rankList = list ? list.toJS() : [];
@@ -27,13 +26,8 @@ function Rank(props) {
     // eslint-disable-next-line
   }, []);
 
-  const enterDetail = (name) => {
-      const idx = filterIdx(name);
-      if(idx === null) {
-        alert("暂无相关数据");
-        return;
-      } 
-      props.history.push(`/rank/${idx}`)
+  const enterDetail = (detail) => {
+    props.history.push(`/rank/${detail.id}`)
   }
   const renderSongList = (list) => {
     return list.length ? (
@@ -50,9 +44,9 @@ function Rank(props) {
     return (
       <List globalRank={global}>
        {
-        list.map((item) => {
+        list.map((item, index) => {
           return (
-            <ListItem key={item.coverImgId} tracks={item.tracks} onClick={() => enterDetail(item.name)}>
+            <ListItem key={`${item.coverImgId}${index}`} tracks={item.tracks} onClick={() => enterDetail(item)}>
               <div className="img_wrapper">
                 <img src={item.coverImgUrl} alt=""/>
                 <div className="decorate"></div>
@@ -70,13 +64,14 @@ function Rank(props) {
   let globalStartIndex = filterIndex(rankList);
   let officialList = rankList.slice(0, globalStartIndex);
   let globalList = rankList.slice(globalStartIndex);
+  let displayStyle = loading ? {"display":"none"}:  {"display": ""};
   return (
     <Container play={songsCount}>
       <Scroll>
         <div>
-          <h1 className="offical">官方榜</h1>
+          <h1 className="offical" style={displayStyle}>官方榜</h1>
             { renderRankList(officialList) }
-          <h1 className="global">全球榜</h1>
+          <h1 className="global" style={displayStyle}>全球榜</h1>
             { renderRankList(globalList, true) }
           { loading ? <EnterLoading><Loading></Loading></EnterLoading> : null }
         </div>
@@ -101,5 +96,4 @@ const mapDispatchToProps = (dispatch) => {
   }
 };
 
- 
 export default connect(mapStateToProps, mapDispatchToProps)(React.memo(Rank));

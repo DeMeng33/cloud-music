@@ -8,7 +8,6 @@ export const Container = styled.div`
   top: 90px;
   bottom: ${props => props.play > 0?"60px": 0};
   width: 100%;
-  overflow: hidden;
   .offical,.global {
     margin: 10px 5px;
     padding-top: 15px;
@@ -20,7 +19,7 @@ export const Container = styled.div`
 
 export const List = styled.ul`
   margin-top: 10px;
-  padding: 0 5px
+  padding: 0 5px;
   display: ${props => props.globalRank ? "flex": "" };
   flex-direction: row;
   justify-content: space-between;

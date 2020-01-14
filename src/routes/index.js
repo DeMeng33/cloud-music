@@ -1,123 +1,82 @@
-import React, {lazy, Suspense} from 'react';
+import React, { lazy, Suspense } from "react";
 import { Redirect } from "react-router-dom";
+import HomeLayout from "../layouts/HomeLayout";
+import BlankLayout from "../layouts/BlankLayout";
 
-const HomeComponent = lazy(() => import("../application/Home/"));
-const Home = (props) => {
+const SuspenseComponent = Component => props => {
   return (
     <Suspense fallback={null}>
-      <HomeComponent {...props}></HomeComponent>
+      <Component {...props}></Component>
     </Suspense>
   )
-};
- 
+}
+
 const RecommendComponent = lazy(() => import("../application/Recommend/"));
-const Recommend = (props) => {
-  return (
-    <Suspense fallback={null}>
-      <RecommendComponent {...props}></RecommendComponent>
-    </Suspense>
-  )
-};
-
 const SingersComponent = lazy(() => import("../application/Singers/"));
-const Singers = (props) => {
-  return (
-    <Suspense fallback={null}>
-      <SingersComponent {...props}></SingersComponent>
-    </Suspense>
-  )
-};
-
 const RankComponent = lazy(() => import("../application/Rank/"));
-const Rank = (props) => {
-  return (
-    <Suspense fallback={null}>
-      <RankComponent {...props}></RankComponent>
-    </Suspense>
-  )
-};
-
 const AlbumComponent = lazy(() => import("../application/Album/"));
-const Album = (props) => {
-  return (
-    <Suspense fallback={null}>
-      <AlbumComponent {...props}></AlbumComponent>
-    </Suspense>
-  )
-};
-
 const SingerComponent = lazy(() => import("./../application/Singer/"));
-const Singer = (props) => {
-  return (
-    <Suspense fallback={null}>
-      <SingerComponent {...props}></SingerComponent>
-    </Suspense>
-  )
-};
-
 const SearchComponent = lazy(() => import("./../application/Search/"));
-const Search = (props) => {
-  return (
-    <Suspense fallback={null}>
-      <SearchComponent {...props}></SearchComponent>
-    </Suspense>
-  )
-};
 
 export default [
   {
-    path: "/",
-    component: Home,
+    component: BlankLayout,
     routes: [
       {
         path: "/",
-        exact: true,
-        render:  ()=> (
-          <Redirect to={"/recommend"}/>
-        )
-      },
-      {
-        path: "/recommend/",
-        extra: true,
-        key: 'home',
-        component: Recommend,
-        routes:[{
-          path: '/recommend/:id',
-          component: Album,
-        }]
-      },
-      {
-        path: "/singers",
-        component: Singers,
-        key: 'singers',
-        routes: [{
-          path: "/singers/:id",
-          component: Singer
-        }]
-      },
-      {
-        path: "/rank",
-        component: Rank,
-        extra: true,
-        key: 'rank',
-        routes:[{
-          path: '/rank/:id',
-          component: Album,
-        }]
-      },
-      {
-        path: "/album/:id",
-        exact: true,
-        key: "album",
-        component: Album
-      },
-      {
-        path: "/search",
-        exact: true,
-        key: "search",
-        component: Search
-      },
+        component: HomeLayout,
+        routes: [
+          {
+            path: "/",
+            exact: true,
+            render: () => <Redirect to={"/recommend"} />
+          },
+          {
+            path: "/recommend",
+            component: SuspenseComponent(RecommendComponent),
+            routes: [
+              {
+                path: "/recommend/:id",
+                component: SuspenseComponent(AlbumComponent)
+              }
+            ]
+          },
+          {
+            path: "/singers",
+            component: SuspenseComponent(SingersComponent),
+            key: "singers",
+            routes: [
+              {
+                path: "/singers/:id",
+                component: SuspenseComponent(SingerComponent)
+              }
+            ]
+          },
+          {
+            path: "/rank/",
+            component: SuspenseComponent(RankComponent),
+            key: "rank",
+            routes: [
+              {
+                path: "/rank/:id",
+                component: SuspenseComponent(AlbumComponent)
+              }
+            ]
+          },
+          {
+            path: "/album/:id",
+            exact: true,
+            key: "album",
+            component: SuspenseComponent(AlbumComponent)
+          },
+          {
+            path: "/search",
+            exact: true,
+            key: "search",
+            component: SuspenseComponent(SearchComponent)
+          }
+        ]
+      }
     ]
-  },
-
+  }
 ];

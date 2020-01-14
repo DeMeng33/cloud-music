@@ -14,8 +14,7 @@ import { changeCurrentSong, changeCurrentIndex, changePlayList, changePlayingSta
 import { playMode } from './../../../api/config';
 import { prefixStyle } from './../../../api/utils';
 import Confirm from './../../../baseUI/confirm/index';
-import Toast from './../../../baseUI/toast/index';
-
+import { useCallback } from 'react';
 
 function PlayList(props) {
 
@@ -29,15 +28,16 @@ function PlayList(props) {
 
   const listContentRef = useRef();
   const listWrapperRef = useRef();
-  const toastRef = useRef();
+  const playListRef = useRef();
+  const confirmRef = useRef();
 
   const {
     currentIndex,
-    currentSong,
+    currentSong:immutableCurrentSong,
     showPlayList,
-    playList,
+    playList:immutablePlayList,
     mode,
-    sequencePlayList
+    sequencePlayList:immutableSequencePlayList
   } = props;
   const {
     togglePlayListDispatch,
@@ -48,8 +48,9 @@ function PlayList(props) {
     clearDispatch
   } = props;
 
-  const playListRef = useRef();
-  const confirmRef = useRef();
+  const currentSong = immutableCurrentSong.toJS();
+  const playList = immutablePlayList.toJS();
+  const sequencePlayList = immutableSequencePlayList.toJS();
 
   const changeMode = (e) => {
     let newMode = (mode + 1)%3;
@@ -68,40 +69,6 @@ function PlayList(props) {
     changeModeDispatch(newMode);
   }
 
-  const getPlayMode = () => {
-    let content, text;
-    if(mode === playMode.sequence) {
-      content = "&#xe625;";
-      text = "顺序播放";
-    } else if(mode === playMode.loop) {
-      content = "&#xe653;";
-      text = "单曲循环";
-    } else {
-      content = "&#xe61b;";
-      text = "随机播放";
-    }
-    return (
-      <div onClick={(e) => changeMode(e)}>
-        <i className="iconfont"  dangerouslySetInnerHTML={{__html: content}}></i>
-        <span className="text">{text}</span>
-      </div>
-    )
-  }
-
-  const getCurrentIcon = (item) => {
-    const current = currentSong.id === item.id;
-    const className = current ? 'icon-play' : '';
-    const content = current ? '&#xe6e3;': '';
-    return (
-      <i className={`current iconfont ${className}`} dangerouslySetInnerHTML={{__html:content}}></i>
-    )
-  }
-
-  const getFavoriteIcon = (item) => {
-    return (
-      <i className="iconfont">&#xe601;</i>
-    )
-  }
   const handleChangeCurrentIndex = (index) => {
     if(currentIndex === index) return;
     changeCurrentIndexDispatch(index);
@@ -115,6 +82,7 @@ function PlayList(props) {
   const handleTouchStart = (e) => {
     if(!canTouch || initialed) return;
     listWrapperRef.current.style["transition"] = "";
+    setDistance(0);
     setStartY(e.nativeEvent.touches[0].pageY);
     setInitialed(true);
   };
@@ -148,37 +116,82 @@ function PlayList(props) {
 
   const handleConfirmClear = () => {
     clearDispatch();
-    toastRef.current.show();
   }
+
+  const getFavoriteIcon = (item) => {
+    return (
+      <i className="iconfont">&#xe601;</i>
+    )
+  }
+
+  const getCurrentIcon = (item) => {
+    const current = currentSong.id === item.id;
+    const className = current ? 'icon-play' : '';
+    const content = current ? '&#xe6e3;': '';
+    return (
+      <i className={`current iconfont ${className}`} dangerouslySetInnerHTML={{__html:content}}></i>
+    )
+  }
+
+  const getPlayMode = () => {
+    let content, text;
+    if(mode === playMode.sequence) {
+      content = "&#xe625;";
+      text = "顺序播放";
+    } else if(mode === playMode.loop) {
+      content = "&#xe653;";
+      text = "单曲循环";
+    } else {
+      content = "&#xe61b;";
+      text = "随机播放";
+    }
+    return (
+      <div>
+        <i className="iconfont" onClick={(e) => changeMode(e)}  dangerouslySetInnerHTML={{__html: content}}></i>
+        <span className="text" onClick={(e) => changeMode(e)}>{text}</span>
+      </div>
+    )
+  }
+
+  const onEnterCB = useCallback(() => {
+    setIsShow(true);
+    listWrapperRef.current.style[transform] = `translate3d(0, 100%, 0)`;
+  }, [transform]);
+ 
+  const onEnteringCB = useCallback(() => {
+    listWrapperRef.current.style["transition"] = "all 0.3s";
+    listWrapperRef.current.style[transform] = `translate3d(0, 0, 0)`;
+  }, [transform]);
+
+  const onExitCB = useCallback(() => {
+    listWrapperRef.current.style[transform] = `translate3d(0, ${distance}px, 0)`;
+  }, [distance,transform]);
+ 
+  const onExitingCB = useCallback(() => {
+    listWrapperRef.current.style["transition"] = "all 0.3s";
+    listWrapperRef.current.style[transform] = `translate3d(0px, 100%, 0px)`;
+  }, [transform]);
+
+  const onExitedCB = useCallback(() => {
+    setIsShow(false);
+    listWrapperRef.current.style[transform] = `translate3d(0px, 100%, 0px)`;
+  }, [transform]);
+
   return (
     <CSSTransition 
       in={showPlayList} 
       timeout={300} 
       classNames="list-fade"
-      onEnter={() => {
-        setIsShow(true);
-        listWrapperRef.current.style[transform] = `translate3d(0, 100%, 0)`;
-      }}
-      onEntering={() => {
-        listWrapperRef.current.style["transition"] = "all 0.3s";
-        listWrapperRef.current.style[transform] = `translate3d(0, 0, 0)`;
-      }}
-      onExit={() => {
-        listWrapperRef.current.style[transform] = `translate3d(0, ${distance}px, 0)`;
-      }}
-      onExiting={() => {
-        listWrapperRef.current.style["transition"] = "all 0.3s";
-        listWrapperRef.current.style[transform] = `translate3d(0px, 100%, 0px)`;
-      }}
-      onExited={() => {
-        setIsShow(false);
-        listWrapperRef.current.style[transform] = `translate3d(0px, 100%, 0px)`;
-      }}
+      onEnter={onEnterCB}
+      onEntering={onEnteringCB}
+      onExit={onExitCB}
+      onExiting={onExitingCB}
+      onExited={onExitedCB}
     >
       <PlayListWrapper 
         ref={playListRef} 
         style={isShow === true ? { display: "block" } : { display: "none" }} 
-        onClick={() =>  togglePlayListDispatch(false)}
+        onClick={() => togglePlayListDispatch(false)}
       >
         <div 
           className="list_wrapper" 
@@ -222,7 +235,6 @@ function PlayList(props) {
           </ScrollWrapper>
         </div>
         <Confirm ref={confirmRef} text={"是否删除全部?"} cancelBtnText={"取消"} confirmBtnText={"确定"} handleConfirm={handleConfirmClear}></Confirm>
-        <Toast ref={toastRef} text={"清空成功"}></Toast>
       </PlayListWrapper>
     </CSSTransition>
   )
@@ -231,9 +243,9 @@ function PlayList(props) {
 // 映射Redux全局的state到组件的props上
 const mapStateToProps = (state) => ({
   currentIndex: state.getIn(['player', 'currentIndex']),
-  currentSong: state.getIn(['player', 'currentSong']).toJS(),
-  playList: state.getIn(['player', 'playList']).toJS(),
-  sequencePlayList: state.getIn(['player', 'sequencePlayList']).toJS(),
+  currentSong: state.getIn(['player', 'currentSong']),
+  playList: state.getIn(['player', 'playList']),
+  sequencePlayList: state.getIn(['player', 'sequencePlayList']),
   showPlayList: state.getIn(['player', 'showPlayList']),
   mode: state.getIn(['player', 'mode'])
 });

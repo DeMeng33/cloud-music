@@ -1,3 +1,12 @@
+/**version:1.0.0
+ * 传入歌词，按照正则表达式解析
+ * 解析的数据结构为：
+ * {
+ *   txt:歌词，
+ *   time:ms
+ * }
+ */
+
 const timeExp = /\[(\d{2,}):(\d{2})(?:\.(\d{2,3}))?]/g
 
 const STATE_PAUSE = 0
@@ -15,13 +24,15 @@ function noop() {
 }
 
 export default class Lyric {
-  constructor(lrc, hanlder = noop) {
+  constructor(lrc, hanlder = noop, speed = 1) {
     this.lrc = lrc
     this.tags = {}
     this.lines = []
     this.handler = hanlder
     this.state = STATE_PAUSE
-    this.curLine = 0
+    this.curLineIndex = 0
+    this.speed = speed
+    this.offset = 0
 
     this._init()
   }
@@ -35,7 +46,7 @@ export default class Lyric {
   _initTag() {
     for (let tag in tagRegMap) {
       const matches = this.lrc.match(new RegExp(`\\[${tagRegMap[tag]}:([^\\]]*)]`, 'i'))
-      this.tags[tag] = matches && matches[1] || ''
+      this.tags[tag] = matches && (matches[1] || '')
     }
   }
 
@@ -45,8 +56,11 @@ export default class Lyric {
       const line = lines[i]
       let result = timeExp.exec(line)
       if (result) {
-        const txt = line.replace(timeExp, '').trim()
+        const txt = line.replace(timeExp, '').trim();
         if (txt) {
+          if (result[3].length === 3) {
+            result[3] = result[3]/10;
+          }
           this.lines.push({
             time: result[1] * 60 * 1000 + result[2] * 1000 + (result[3] || 0) * 10,
             txt
@@ -58,9 +72,10 @@ export default class Lyric {
     this.lines.sort((a, b) => {
       return a.time - b.time
     })
+
   }
 
-  _findCurNum(time) {
+  _findcurLineIndex(time) {
     for (let i = 0; i < this.lines.length; i++) {
       if (time <= this.lines[i].time) {
         return i
@@ -79,55 +94,63 @@ export default class Lyric {
     })
   }
 
-  _playRest() {
-    let line = this.lines[this.curNum]
-    let delay = line.time - (+new Date() - this.startStamp)
-
+  _playRest(isSeek=false) {
+    let line = this.lines[this.curLineIndex]
+    let delay;
+    if(isSeek) {
+      delay = line.time - (+new Date() - this.startStamp);
+    }else {
+      //拿到上一行的歌词开始时间，算间隔
+      let preTime = this.lines[this.curLineIndex - 1] ? this.lines[this.curLineIndex - 1].time : 0;
+      delay = line.time - preTime;
+    }
     this.timer = setTimeout(() => {
-      this._callHandler(this.curNum++)
-      if (this.curNum < this.lines.length && this.state === STATE_PLAYING) {
+      this._callHandler(this.curLineIndex++)
+      if (this.curLineIndex < this.lines.length && this.state === STATE_PLAYING) {
         this._playRest()
       }
-    }, delay)
+    }, (delay / this.speed))
   }
 
-  play(startTime = 0, skipLast) {
+  changeSpeed(speed) {
+    this.speed = speed;
+  }
+
+  play(offset = 0, isSeek = false) {
     if (!this.lines.length) {
       return
     }
     this.state = STATE_PLAYING
 
-    this.curNum = this._findCurNum(startTime)
-    this.startStamp = +new Date() - startTime
+    this.curLineIndex = this._findcurLineIndex(offset)
+    //现在正处于第this.curLineIndex-1行
+    this._callHandler(this.curLineIndex-1)
+    this.offset = offset
+    this.startStamp = +new Date() - offset
 
-    if (!skipLast) {
-      this._callHandler(this.curNum - 1)
-    }
-
-    if (this.curNum < this.lines.length) {
+    if (this.curLineIndex < this.lines.length) {
       clearTimeout(this.timer)
-      this._playRest()
+      this._playRest(isSeek)
     }
   }
 
-  togglePlay() {
-    var now = +new Date()
+  togglePlay(offset) {
     if (this.state === STATE_PLAYING) {
       this.stop()
-      this.pauseStamp = now
+      this.offset = offset
     } else {
       this.state = STATE_PLAYING
-      this.play((this.pauseStamp || now) - (this.startStamp || now), true)
-      this.pauseStamp = 0
+      this.play(offset, true)
     }
   }
 
   stop() {
     this.state = STATE_PAUSE
+    this.offset = 0
     clearTimeout(this.timer)
   }
 
   seek(offset) {
-    this.play(offset)
+    this.play(offset, true)
   }
 }

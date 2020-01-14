@@ -33,7 +33,7 @@ export const SongList = styled.div`
       display: flex;
       align-items: center;
       position: absolute;
-      right: 0; top :0px; bottom: 0;
+      right: 0; top :0; bottom: 0;
       width: 130px;
       line-height: 34px;
       background: ${style["theme-color"]};
@@ -64,6 +64,7 @@ export const SongItem = styled.ul`
     height: 60px;
     align-items: center;  
     .index{
+      flex-basis: 60px;
       width: 60px;
       height: 60px;
       line-height: 60px;
@@ -78,6 +79,10 @@ export const SongItem = styled.ul`
       flex-direction: column;
       justify-content: space-around;
       border-bottom: 1px solid ${style["border-color"]};
+      ${style.noWrap()}
+      >span{
+        ${style.noWrap()}
+      }
       >span:first-child{
         color: ${style["font-color-desc"]};
       }

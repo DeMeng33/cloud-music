@@ -1,4 +1,4 @@
-import React, {useRef, useState, useEffect} from 'react';
+import React, {useRef, useState, useEffect, useMemo} from 'react';
 import styled from 'styled-components';
 import style from '../../assets/global-style';
 import { debounce } from './../../api/utils';
@@ -43,31 +43,37 @@ const SearchBox = (props) => {
   const { newQuery } = props;
   const { handleQuery } = props;
 
-  useEffect(() => {
-    queryRef.current.focus();
-  }, [])
+  let handleQueryDebounce = useMemo(() => {
+    return debounce(handleQuery, 500);
+  }, [handleQuery]);
 
   useEffect(() => {
-    debounce(handleQuery, 1000)(query);
-    // eslint-disable-next-line
+    queryRef.current.focus();
+  }, []);
+
+  useEffect(() => {
+    handleQueryDebounce(query);
+    // eslint-disable-next-line 
   }, [query]);
 
   useEffect(() => {
+    let curQuery = query;
     if(newQuery !== query){
-      setQuery(newQuery);
+      curQuery = newQuery;
+      queryRef.current.value = newQuery;
     }
+    setQuery(curQuery);
     // eslint-disable-next-line
   }, [newQuery]);
 
   const handleChange = (e) => {
-    if(e.currentTarget.value === '')
-    handleQuery('');
-    setQuery(e.currentTarget.value)
+    let val = e.currentTarget.value
+    setQuery(val);
   };
 
   const clearQuery = () => {
     setQuery('');
-    handleQuery('');
+    queryRef.current.focus();
   }
   
   const displayStyle = query ? {display: 'block'}: {display: 'none'};
@@ -75,10 +81,10 @@ const SearchBox = (props) => {
   return (
     <SearchBoxWrapper>
       <i className="iconfont icon-back" onClick={() => props.back()}>&#xe655;</i>
-      <input ref={queryRef} className="box" placeholder="搜索歌曲、歌手、专辑" value={query} onChange={handleChange}/>
+      <input ref={queryRef} className="box" placeholder="搜索歌曲、歌手、专辑" onChange={handleChange}/>
       <i className="iconfont icon-delete" onClick={clearQuery} style={displayStyle}>&#xe600;</i>
     </SearchBoxWrapper>
   )
-}
+};
 
 export default React.memo(SearchBox);
